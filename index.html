@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d6b3a">
+<title>Wiesn Strichliste – Weinzelt 2026 V10.3</title>
+<style>
+:root{--bg:#f7f2e7;--card:#fff;--g:#0d6b3a;--g2:#149455;--text:#1e2622;--muted:#68756e;--line:#dde4df;--red:#b3261e;--amber:#a15f00;--gold:#d5a126}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+.hidden{display:none!important}header{position:sticky;top:0;z-index:20;background:var(--g);color:#fff;padding:13px 15px;box-shadow:0 2px 10px #0002}
+header h1{font-size:19px;margin:0}header .sub{font-size:12px;opacity:.9;margin-top:3px}
+main{max-width:780px;margin:auto;padding:12px 12px 100px}.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 12px #0000000d}
+.row{display:flex;gap:9px;align-items:center}.between{justify-content:space-between}.grow{flex:1}
+input,button{font:inherit}input{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;margin-top:5px}
+label{display:block;font-size:13px;font-weight:750;margin-top:11px}button{border:0;border-radius:12px;padding:10px 13px;font-weight:800;cursor:pointer}
+.btn{background:var(--g);color:#fff}.btn2{background:#edf6f1;color:var(--g)}.danger{background:#fff0ef;color:var(--red)}.full{width:100%}
+.small{font-size:12px;color:var(--muted)}.total{font-size:28px;font-weight:900;color:var(--g)}
+.login{min-height:100vh;display:grid;place-items:center;padding:20px 12px}.loginbox{width:min(100%,480px)}.brand{text-align:center;margin-bottom:14px}.brand .tent{font-size:42px}.brand h1{margin:5px 0;font-size:25px}
+.loginerror{min-height:20px;margin-top:8px;font-size:13px;color:var(--red);overflow-wrap:anywhere}
+.tabs{display:flex;gap:7px;overflow:auto;padding-bottom:2px}.tab{white-space:nowrap;background:#ecefe9;color:#34433b}.tab.on{background:var(--g);color:#fff}
+.product{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}.product:last-child{border-bottom:0}
+.pname{font-weight:800}.meta{font-size:12px;color:var(--muted);margin-top:2px}
+.counter{display:flex;align-items:center;gap:7px}.counter button{border:0;width:42px;height:42px;border-radius:11px;font-size:24px;font-weight:800;padding:0}
+.minus{background:#eff1ef}.plus{background:var(--g2);color:#fff}.qty{min-width:25px;text-align:center;font-size:18px;font-weight:900}
+.favbtn{border:0;background:transparent;padding:0 0 0 5px;font-size:21px;line-height:1;color:#9aa39e;vertical-align:middle}.favbtn.on{color:var(--gold)}
+.bottom{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom));z-index:25}
+.bottomin{max-width:780px;margin:auto;display:flex;align-items:center;justify-content:space-between}
+.recent,.adminrow{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.recent:last-child,.adminrow:last-child{border-bottom:0}
+.search{margin-top:9px}.ok{color:var(--g)}.warn{color:var(--amber)}.err{color:var(--red)}
+dialog{border:0;border-radius:18px;width:min(94vw,650px);max-height:88vh;padding:0;box-shadow:0 20px 60px #0005}dialog::backdrop{background:#0008}.dlg{padding:18px}
+.adminLoginHint{background:#f5f8f6;border-radius:12px;padding:10px;margin:10px 0;font-size:12px;color:var(--muted)}
+.moneyInput{font-size:21px;font-weight:800}code{overflow-wrap:anywhere}
+@media(max-width:520px){.total{font-size:24px}}
+</style>
+</head>
+<body>
+
+<section id="loginView" class="login">
+  <div class="loginbox">
+    <div class="brand"><div class="tent">🎪</div><h1>Wiesn 2026</h1><div class="small">Weinzelt 2026 · zentrale Firebase-Strichliste</div></div>
+    <div class="card">
+      <h2 style="margin:0 0 4px">Teilnehmer</h2>
+      <label for="loginName">Ich bin *</label>
+      <input id="loginName" type="text" required autocomplete="name" placeholder="Vor- und Nachname eingeben">
+      <label for="loginPin">4-stellige PIN *</label>
+      <input id="loginPin" type="password" required inputmode="numeric" maxlength="4" minlength="4" pattern="[0-9]{4}" placeholder="4-stellige PIN">
+      <div class="small" style="margin-top:8px">Beim ersten Login wird dieses Gerät mit Name und PIN registriert.</div>
+      <button id="loginBtn" class="btn full" style="margin-top:14px">Anmelden</button>
+      <div id="loginError" class="loginerror"></div>
+      <button id="adminLoginLink" class="btn2 full" style="margin-top:7px">Admin-Login</button>
+      <div id="loginSync" class="small" style="text-align:center;margin-top:10px">Firebase wird verbunden …</div>
+    </div>
+  </div>
+</section>
+
+<section id="appView" class="hidden">
+<header>
+  <div class="row between">
+    <div><h1>🍷 Wiesn Strichliste</h1><div id="headerSub" class="sub"></div></div>
+    <button id="logoutBtn" class="btn2">Abmelden</button>
+  </div>
+</header>
+<main>
+  <div id="userArea">
+    <div class="card">
+      <div class="row between"><div><div class="small">Angemeldet als</div><b id="who"></b></div><div id="sync" class="small ok">● Firebase live</div></div>
+      <div class="search"><input id="search" placeholder="Volltextsuche, z. B. Weißbier …"></div>
+    </div>
+    <div class="card"><div id="tabs" class="tabs"></div></div>
+    <div class="card"><div id="products"></div></div>
+    <div class="card">
+      <div class="row between"><b>Meine Buchungen</b><span id="myCount" class="small">0 Positionen</span></div>
+      <div id="recent"></div>
+    </div>
+  </div>
+
+  <div id="adminArea" class="hidden">
+    <div class="card"><div class="row between"><div><div class="small">Admin</div><b id="adminEmail"></b></div><div class="small ok">● Firebase Auth</div></div></div>
+    <div class="card"><div class="small">Erfasste Gesamtsumme</div><div class="total" id="grandTotal">0,00 €</div></div>
+    <div class="card">
+      <label>Tatsächliche Rechnung vom Weinzelt</label>
+      <div class="row"><input id="invoiceTotal" class="moneyInput" inputmode="decimal" placeholder="0,00"><button id="saveInvoice" class="btn">Speichern</button></div>
+      <div style="margin-top:12px"><div class="small">Differenz Rechnung − erfasst</div><div id="invoiceDelta" style="font-size:20px;font-weight:850">–</div></div>
+    </div>
+    <div class="card"><div class="row between"><b>Alle Personen</b><span class="small">Tippen zum Korrigieren</span></div><div id="adminSummary"></div></div>
+    <div class="card">
+      <div class="row between"><div><b>Änderungsprotokoll</b><div class="small">Wer hat wann welchen Artikel geändert?</div></div><button id="clearLog" class="danger">Log löschen</button></div>
+      <div id="adminLog" style="margin-top:8px"></div>
+    </div>
+  </div>
+</main>
+<div class="bottom"><div class="bottomin"><div><div class="small" id="bottomLabel">Meine Summe</div><div class="total" id="bottomTotal">0,00 €</div></div></div></div>
+</section>
+
+<dialog id="adminLogin">
+ <div class="dlg">
+  <div class="row between"><h2 style="margin:0">Admin-Login</h2><button class="btn2" id="closeAdminLogin">Schließen</button></div>
+  <div class="adminLoginHint">Verwendet einen Benutzer aus Firebase Authentication mit aktivierter E-Mail/Passwort-Anmeldung.</div>
+  <label for="adminEmailInput">E-Mail</label><input id="adminEmailInput" type="email" autocomplete="username" placeholder="admin@example.de">
+  <label for="adminPasswordInput">Passwort</label><input id="adminPasswordInput" type="password" autocomplete="current-password" placeholder="Passwort">
+  <button id="adminLoginBtn" class="btn full" style="margin-top:13px">Als Admin anmelden</button>
+  <div id="adminLoginError" class="loginerror"></div>
+ </div>
+</dialog>
+
+<dialog id="editPerson">
+ <div class="dlg">
+  <div class="row between"><h2 id="editTitle" style="margin:0">Person bearbeiten</h2><button id="closeEdit" class="btn2">Schließen</button></div>
+  <div id="editProducts" style="margin-top:12px"></div>
+ </div>
+</dialog>
+
+<script type="module">
+const firebaseConfig={
+  apiKey:"AIzaSyB3Bsrhn0NReAz3crd6ZnTLJfBKiVUfbnQ",
+  authDomain:"wiesn2026-ac284.firebaseapp.com",
+  databaseURL:"https://wiesn2026-ac284-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"wiesn2026-ac284",
+  storageBucket:"wiesn2026-ac284.firebasestorage.app",
+  messagingSenderId:"737523128553",
+  appId:"1:737523128553:web:1b36edea69ed8896153878"
+};
+const PRODUCTS=[
+
+{id:"obatzter",cat:"Brotzeit & Vorspeisen",name:"Original Bayerischer Obatzter",size:"",price:19.50},
+{id:"kaeseauswahl",cat:"Brotzeit & Vorspeisen",name:"Bio-Käseauswahl aus Weißenberg",size:"",price:25.90},
+{id:"rinderbouillon",cat:"Suppen",name:"Herzhafte Rinderbouillon mit Frittaten",size:"",price:10.50},
+{id:"kuerbissuppe",cat:"Suppen",name:"Cremige Bio-Kürbissuppe",size:"",price:11.50},
+{id:"legumes",cat:"Brotzeit & Vorspeisen",name:"Légumes grillés – Mediterranes Gemüse",size:"",price:23.00},
+{id:"rindtatar",cat:"Brotzeit & Vorspeisen",name:"Tatar vom Bio-Rind",size:"",price:38.50},
+{id:"lachstatar",cat:"Brotzeit & Vorspeisen",name:"Lachstatar",size:"",price:38.50},
+{id:"surf_turf_tatar",cat:"Brotzeit & Vorspeisen",name:"Surf & Turf Tatar",size:"",price:38.50},
+{id:"caesar",cat:"Brotzeit & Vorspeisen",name:"Palace Caesar Salad mit Backhendl",size:"",price:24.00},
+{id:"garnelenpfanne",cat:"Fisch",name:"Garnelenpfanne",size:"5 Black Tiger Garnelen",price:49.00},
+{id:"austern6",cat:"Fisch",name:"6 Austern Pléiade Poget No.3",size:"",price:45.00},
+{id:"fishchips",cat:"Fisch",name:"Weinzelt Fish & Chips",size:"",price:38.00},
+{id:"saibling",cat:"Fisch",name:"Zartes Saiblingsfilet",size:"",price:34.00},
+{id:"radi",cat:"Brotzeit & Vorspeisen",name:"Feinblättrig geschnittener Freiland-Radi",size:"",price:19.90},
+{id:"wurstsalat",cat:"Brotzeit & Vorspeisen",name:"Münchner Wurstsalat",size:"",price:18.00},
+{id:"wurstsalat_schweizer",cat:"Brotzeit & Vorspeisen",name:"Schweizer Wurstsalat mit Emmentaler",size:"",price:19.50},
+{id:"veg_brotzeit",cat:"Brotzeit & Vorspeisen",name:"Vegetarische Brotzeit",size:"ab 4 Pers. · p.P.",price:22.90},
+{id:"sedlmayr_brotzeit",cat:"Brotzeit & Vorspeisen",name:"Dem Sedlmayr seine Brotzeit",size:"ab 4 Pers. · p.P.",price:29.90},
+{id:"sedlmayr_kaviar50",cat:"Extras",name:"Imperial Kaviar 50 g Dose – Zuschlag",size:"",price:165.00},
+{id:"sedlmayr_kaviar125",cat:"Extras",name:"Imperial Kaviar 125 g Dose – Zuschlag",size:"",price:395.00},
+{id:"geniesser_brotzeit",cat:"Brotzeit & Vorspeisen",name:"Kufflers Genießer-Brotzeit",size:"ab 4 Pers. · p.P.",price:39.00},
+{id:"spanferkel",cat:"Hauptgerichte",name:"Knuspriger Spanferkelbraten",size:"",price:37.50},
+{id:"schnitzel",cat:"Hauptgerichte",name:"Original Kuffler Wiener Schnitzel",size:"",price:39.50},
+{id:"steakfrites",cat:"Hauptgerichte",name:"Steak Frites",size:"",price:43.00},
+{id:"bavettesteak",cat:"Hauptgerichte",name:"Tranchen vom gegrillten Bavettesteak",size:"",price:49.00},
+{id:"jennerwein",cat:"Hauptgerichte",name:"Jennerweinpfandl",size:"",price:54.00},
+{id:"schmankerlpfanne",cat:"Hauptgerichte",name:"Kuffler Schmankerlpfanne",size:"ab 2 Pers. · p.P.",price:52.00},
+{id:"vegadellen",cat:"Vegetarisch & Vegan",name:"Vegadellen – fast wie Omas Fleischpflanzerl",size:"",price:28.00},
+{id:"kaesspatzen",cat:"Vegetarisch & Vegan",name:"Allgäuer Bio-Kässpatzen",size:"",price:19.50},
+{id:"steinpilze_extra",cat:"Extras",name:"Sautierte Steinpilze – Zuschlag",size:"",price:9.00},
+{id:"kuerbis_pastinake",cat:"Vegetarisch & Vegan",name:"Ragout von Bio-Kürbis & Bio-Pastinake",size:"",price:21.00},
+{id:"schlosspilze",cat:"Vegetarisch & Vegan",name:"Bio-Schlosspilze",size:"",price:26.00},
+{id:"rette_mich_pasta",cat:"Vegetarisch & Vegan",name:"„Rette Mich-Pasta“",size:"",price:19.50},
+{id:"burrata_extra",cat:"Extras",name:"Burrata – Zuschlag zur Pasta",size:"",price:6.00},
+{id:"bratwurst",cat:"Würstl & Grill",name:"2 Paar Münchner Schweinsbratwürstl",size:"",price:19.00},
+{id:"kaesekrainer",cat:"Würstl & Grill",name:"Bio Käsekrainer",size:"",price:21.00},
+{id:"nuernberger",cat:"Würstl & Grill",name:"6 original Nürnberger Rostbratwürstl",size:"",price:19.90},
+{id:"fleischlose_bratwurst",cat:"Vegetarisch & Vegan",name:"Fleischlose Bratwurst",size:"",price:19.90},
+{id:"hendl",cat:"Würstl & Grill",name:"½ goldbraun gegrilltes Wiesnhendl",size:"",price:22.90},
+{id:"ente",cat:"Würstl & Grill",name:"½ resche Ente vom Drehgrill",size:"",price:44.00},
+{id:"haxe",cat:"Würstl & Grill",name:"½ knusprige Schweinshaxe",size:"",price:31.00},
+{id:"party_fleischpflanzerl",cat:"Spätkarte",name:"Lauwarme Party-Fleischpflanzerl",size:"ab 22:00 · p.P.",price:24.50},
+{id:"flammkuchen",cat:"Spätkarte",name:"Flammkuchen",size:"ab 22:00 · p.P.",price:19.00},
+{id:"flamm_kaviar50",cat:"Extras",name:"Imperial Kaviar 50 g Dose – Zuschlag zum Flammkuchen",size:"",price:165.00},
+{id:"papa_joe",cat:"Asia",name:"Papa Joe’s Weinzelt Selection",size:"ab 2 Pers. · p.P.",price:36.00},
+{id:"kaiserschmarrn",cat:"Dessert & Kaffee",name:"WEINZELT Kaiserschmarrn",size:"",price:22.50},
+{id:"marillenknoedel",cat:"Dessert & Kaffee",name:"Marillenknödel",size:"",price:14.90},
+{id:"dampfnudel",cat:"Dessert & Kaffee",name:"Dampfnudel",size:"",price:16.50},
+{id:"bayerisch_creme",cat:"Dessert & Kaffee",name:"Bayerisch Creme",size:"",price:11.90},
+{id:"rote_gruetze",cat:"Dessert & Kaffee",name:"Rote Grütze",size:"",price:11.90},
+{id:"dessertbrettl",cat:"Dessert & Kaffee",name:"Kufflers Dessertbrettl",size:"ab 2 Pers. · p.P.",price:16.00},
+{id:"kaffee",cat:"Dessert & Kaffee",name:"Haferl Kaffee",size:"",price:5.90},
+{id:"tee",cat:"Dessert & Kaffee",name:"Haferl Bio-Tee",size:"",price:5.90},
+{id:"veltliner025",cat:"Schoppenwein",name:"Grüner Veltliner 2025",size:"0,25 l",price:15.50},
+{id:"veltliner1",cat:"Schoppenwein",name:"Grüner Veltliner 2025",size:"1,0 l",price:62.00},
+{id:"pinotblanc025",cat:"Schoppenwein",name:"Pinot Blanc Edition Kuffler 2025",size:"0,25 l",price:17.90},
+{id:"pinotblanc075",cat:"Schoppenwein",name:"Pinot Blanc Edition Kuffler 2025",size:"0,75 l",price:53.70},
+{id:"silvaner025",cat:"Schoppenwein",name:"Silvaner Kuffler Bayerische Edition 2025",size:"0,25 l",price:18.00},
+{id:"silvaner075",cat:"Schoppenwein",name:"Silvaner Kuffler Bayerische Edition 2025",size:"0,75 l",price:54.00},
+{id:"pinotgrigio025",cat:"Schoppenwein",name:"Pinot Grigio WILD NATURE DOC Bio 2024",size:"0,25 l",price:17.00},
+{id:"pinotgrigio075",cat:"Schoppenwein",name:"Pinot Grigio WILD NATURE DOC Bio 2024",size:"0,75 l",price:51.00},
+{id:"chardonnay025",cat:"Schoppenwein",name:"Chardonnay „Bundschuh“ 2025",size:"0,25 l",price:17.50},
+{id:"chardonnay075",cat:"Schoppenwein",name:"Chardonnay „Bundschuh“ 2025",size:"0,75 l",price:52.50},
+{id:"merlot025",cat:"Schoppenwein",name:"Les Cépages Merlot 2024",size:"0,25 l",price:17.90},
+{id:"merlot075",cat:"Schoppenwein",name:"Les Cépages Merlot 2024",size:"0,75 l",price:53.70},
+{id:"schorle_aufschlag",cat:"Extras",name:"Schoppenwein als Schorle – Aufschlag",size:"0,5 l",price:3.80},
+{id:"minuty075",cat:"Flaschenwein Rosé",name:"Minuty Prestige Rosé AOP 2025",size:"0,75 l",price:79.00},
+{id:"minuty15",cat:"Flaschenwein Rosé",name:"Minuty Prestige Rosé AOP 2025",size:"1,5 l",price:165.00},
+{id:"whispering075",cat:"Flaschenwein Rosé",name:"Whispering Angel Rosé AOP 2025",size:"0,75 l",price:79.00},
+{id:"whispering15",cat:"Flaschenwein Rosé",name:"Whispering Angel Rosé AOP 2025",size:"1,5 l",price:165.00},
+{id:"whispering3",cat:"Flaschenwein Rosé",name:"Whispering Angel Rosé AOP 2025",size:"3,0 l",price:330.00},
+{id:"whispering6",cat:"Flaschenwein Rosé",name:"Whispering Angel Rosé AOP 2025",size:"6,0 l",price:650.00},
+{id:"whispering9",cat:"Flaschenwein Rosé",name:"Whispering Angel Rosé AOP 2025",size:"9,0 l",price:1100.00},
+{id:"grauburgunder075",cat:"Flaschenwein Weiß",name:"Grauburgunder 2025",size:"0,75 l",price:56.00},
+{id:"boandl075",cat:"Flaschenwein Weiß",name:"BOANDLSEPP Wiesncuvée 2025",size:"0,75 l",price:59.00},
+{id:"boandl15",cat:"Flaschenwein Weiß",name:"BOANDLSEPP Wiesncuvée 2025",size:"1,5 l",price:129.00},
+{id:"aichberg075",cat:"Flaschenwein Weiß",name:"AICHBERG Cuvée Blanc Riserva 2022",size:"0,75 l",price:109.00},
+{id:"aichberg15",cat:"Flaschenwein Weiß",name:"AICHBERG Cuvée Blanc Riserva 2022",size:"1,5 l",price:219.00},
+{id:"lugana075",cat:"Flaschenwein Weiß",name:"Bulgarini Lugana DOC 2025",size:"0,75 l",price:78.00},
+{id:"lugana15",cat:"Flaschenwein Weiß",name:"Bulgarini Lugana DOC 2025",size:"1,5 l",price:180.00},
+{id:"kaitui075",cat:"Flaschenwein Weiß",name:"Sauvignon Blanc Kaitui QbA 2025",size:"0,75 l",price:68.00},
+{id:"kaitui15",cat:"Flaschenwein Weiß",name:"Sauvignon Blanc Kaitui QbA 2025",size:"1,5 l",price:145.00},
+{id:"chablis075",cat:"Flaschenwein Weiß",name:"Chablis AOC Bio 2023",size:"0,75 l",price:98.00},
+{id:"chablis15",cat:"Flaschenwein Weiß",name:"Chablis AOC Bio 2023",size:"1,5 l",price:210.00},
+{id:"meursault075",cat:"Flaschenwein Weiß",name:"Meursault AOC 2024",size:"0,75 l",price:159.00},
+{id:"fass4_075",cat:"Flaschenwein Weiß",name:"Grüner Veltliner „Fass 4“ Bio 2025",size:"0,75 l",price:78.00},
+{id:"fass4_15",cat:"Flaschenwein Weiß",name:"Grüner Veltliner „Fass 4“ Bio 2025",size:"1,5 l",price:180.00},
+{id:"schiefersteil075",cat:"Flaschenwein Weiß",name:"Schiefersteil Riesling QbA trocken 2023/2024",size:"0,75 l",price:73.00},
+{id:"schiefersteil15",cat:"Flaschenwein Weiß",name:"Schiefersteil Riesling QbA trocken 2023/2024",size:"1,5 l",price:159.00},
+{id:"hoehenflug075",cat:"Flaschenwein Rot",name:"Cuvée Höhenflug Edition Kuffler 2022",size:"0,75 l",price:69.00},
+{id:"blaufrankisch075",cat:"Flaschenwein Rot",name:"Blaufränkisch Béla-Jóska Eisenberg DAC Bio 2022/23",size:"0,75 l",price:69.00},
+{id:"cupano075",cat:"Flaschenwein Rot",name:"Vino Rosso di Cupano",size:"0,75 l",price:82.00},
+{id:"mouton075",cat:"Flaschenwein Rot",name:"Mouton Cadet Héritage AOC 2022/2023",size:"0,75 l",price:75.00},
+{id:"mouton15",cat:"Flaschenwein Rot",name:"Mouton Cadet Héritage AOC 2022/2023",size:"1,5 l",price:150.00},
+{id:"siran075",cat:"Flaschenwein Rot",name:"Château Siran Margaux AOP 2022",size:"0,75 l",price:98.00},
+{id:"veuve075",cat:"Champagner & Sekt",name:"Veuve Clicquot Yellow Label Brut",size:"0,75 l",price:165.00},
+{id:"veuve15",cat:"Champagner & Sekt",name:"Veuve Clicquot Yellow Label Brut Magnum",size:"1,5 l",price:355.00},
+{id:"veuve6",cat:"Champagner & Sekt",name:"Veuve Clicquot Yellow Label Brut Methusalem",size:"6 l",price:2200.00},
+{id:"veuve9",cat:"Champagner & Sekt",name:"Veuve Clicquot Yellow Label Brut Salmanazar",size:"9 l",price:3300.00},
+{id:"veuve15l",cat:"Champagner & Sekt",name:"Veuve Clicquot Yellow Label Brut Nebukadnezar",size:"15 l",price:5500.00},
+{id:"ruinart075",cat:"Champagner & Sekt",name:"Ruinart „R“ Brut",size:"0,75 l",price:190.00},
+{id:"ruinartrose075",cat:"Champagner & Sekt",name:"Ruinart Rosé Brut",size:"0,75 l",price:259.00},
+{id:"geldermann075",cat:"Champagner & Sekt",name:"Geldermann Sekt Grand Brut",size:"0,75 l",price:52.00},
+{id:"geldermann15",cat:"Champagner & Sekt",name:"Geldermann Sekt Grand Brut",size:"1,5 l",price:109.00},
+{id:"geldermannrose075",cat:"Champagner & Sekt",name:"Geldermann Sekt Grand Rosé",size:"0,75 l",price:54.00},
+{id:"geldermannrose15",cat:"Champagner & Sekt",name:"Geldermann Sekt Grand Rosé",size:"1,5 l",price:119.00},
+{id:"cremant075",cat:"Champagner & Sekt",name:"Kuffler Edition Crémant de Limoux Rosé Brut",size:"0,75 l",price:75.00},
+{id:"prosecco075",cat:"Champagner & Sekt",name:"Ruggeri Giall’Oro Prosecco Superiore DOCG",size:"0,75 l",price:75.00},
+{id:"chandon075",cat:"Champagner & Sekt",name:"Chandon Garden Spritz",size:"0,75 l",price:76.00},
+{id:"weissbier",cat:"Bier & Alkoholfrei",name:"Paulaner Hefe-Weißbier",size:"0,5 l · nur bis 21 Uhr",price:9.20},
+{id:"weissbier0",cat:"Bier & Alkoholfrei",name:"Paulaner Hefe-Weißbier alkoholfrei",size:"0,5 l · nur bis 21 Uhr",price:9.20},
+{id:"cola",cat:"Bier & Alkoholfrei",name:"Coca-Cola / Fanta",size:"0,25 l",price:4.90},
+{id:"sprite",cat:"Bier & Alkoholfrei",name:"Sprite",size:"0,5 l",price:5.20},
+{id:"spezi",cat:"Bier & Alkoholfrei",name:"Paulaner Spezi",size:"0,5 l",price:7.20},
+{id:"saft",cat:"Bier & Alkoholfrei",name:"Apfelsaft / Orangensaft",size:"0,25 l",price:4.90},
+{id:"wasser025",cat:"Bier & Alkoholfrei",name:"Bad Brambacher Mineralwasser",size:"0,25 l",price:4.20},
+{id:"wasser075",cat:"Bier & Alkoholfrei",name:"Bad Brambacher Mineralwasser",size:"0,75 l",price:11.50},
+{id:"wasser_naturell075",cat:"Bier & Alkoholfrei",name:"Bad Brambacher Mineralwasser Naturell",size:"0,75 l",price:11.50},
+{id:"tonic",cat:"Bier & Alkoholfrei",name:"Schweppes Tonic Water",size:"0,2 l",price:6.20},
+{id:"bitterlemon",cat:"Bier & Alkoholfrei",name:"Schweppes Bitter Lemon",size:"0,2 l",price:6.20},
+{id:"gingerbeer",cat:"Bier & Alkoholfrei",name:"Schweppes Ginger Beer",size:"0,2 l",price:6.20},
+{id:"redbull",cat:"Bier & Alkoholfrei",name:"Red Bull Energy Drink",size:"0,25 l",price:8.00},
+{id:"redbullzero",cat:"Bier & Alkoholfrei",name:"Red Bull Zero",size:"0,25 l",price:8.00},
+{id:"belvedere07",cat:"Spirituosen",name:"Belvedere Vodka 40 % vol",size:"0,7 l",price:275.00},
+{id:"botanist07",cat:"Spirituosen",name:"The Botanist Gin 46 % vol",size:"0,7 l",price:238.00},
+{id:"kraeuter",cat:"Spirituosen",name:"Kufflers Kräuterlikör",size:"4 cl",price:16.50},
+{id:"marillenbrand",cat:"Spirituosen",name:"Lantenhammer Marillenbrand",size:"4 cl",price:16.50},
+{id:"williams",cat:"Spirituosen",name:"Lantenhammer Williamsbirnenbrand",size:"4 cl",price:16.50},
+{id:"honigwilli",cat:"Spirituosen",name:"Hanni's Honigwilli",size:"4 cl",price:16.50},
+{id:"dirtybrew",cat:"Spirituosen",name:"Belvedere Dirty Brew",size:"5 cl",price:12.50}
+
+];
+const CATS=["Favoriten", "Brotzeit & Vorspeisen", "Suppen", "Fisch", "Hauptgerichte", "Vegetarisch & Vegan", "Würstl & Grill", "Spätkarte", "Asia", "Dessert & Kaffee", "Schoppenwein", "Flaschenwein Rosé", "Flaschenwein Weiß", "Flaschenwein Rot", "Champagner & Sekt", "Bier & Alkoholfrei", "Spirituosen", "Extras"];
+
+let auth=null, authApi=null, db=null, dApi=null, appCheckApi=null, appCheck=null, currentUid=null;
+let session=JSON.parse(localStorage.getItem("w_session_v10_3")||"null"), active="Favoriten";
+let ownProfile=null, ownOrders={}, ownFavorites=[];
+let adminUsers={}, adminOrders={}, adminInvoice=0, adminLogs={};
+
+const $=s=>document.querySelector(s);
+const euro=n=>new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR"}).format(Number(n||0));
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+const sha256=async s=>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")};
+
+function normalizeSearch(s){
+ return String(s||"").toLocaleLowerCase("de-DE")
+   .replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
+   .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+   .replace(/[^a-z0-9]+/g," ").trim();
+}
+function isFav(id){return ownFavorites.includes(id)}
+function ownQty(id){return Number(ownOrders[id]||0)}
+function ownTotal(){return PRODUCTS.reduce((s,p)=>s+ownQty(p.id)*p.price,0)}
+function orderTotal(order){return PRODUCTS.reduce((s,p)=>s+Number(order?.[p.id]||0)*p.price,0)}
+function orderCount(order){return Object.values(order||{}).reduce((s,n)=>s+Number(n||0),0)}
+function productById(id){return PRODUCTS.find(p=>p.id===id)}
+async function addLog({uid,userName,itemId,oldQty,newQty,source}){
+ const p=productById(itemId); if(!p||oldQty===newQty||!dApi||!db||!auth?.currentUser)return;
+ const logRef=dApi.push(dApi.ref(db,"wiesn2026/logs"));
+ const payload={
+   ts:dApi.serverTimestamp(),
+   uid:auth.currentUser.uid,
+   targetUid:uid||"",
+   userName:userName||"Unbekannt",
+   itemId,
+   itemName:p.name,
+   oldQty:Number(oldQty||0),
+   newQty:Number(newQty||0),
+   delta:Number(newQty||0)-Number(oldQty||0),
+   action:newQty===0?"gelöscht":oldQty===0?"hinzugefügt":"geändert",
+   source:source||"Teilnehmer"
+ };
+ await dApi.set(logRef,payload);
+}
+function renderAdminLog(){
+ if(session?.role!=="admin")return;
+ const rows=Object.entries(adminLogs||{}).map(([id,x])=>({id,...x})).sort((a,b)=>Number(b.ts||0)-Number(a.ts||0));
+ $("#adminLog").innerHTML=rows.length?rows.slice(0,300).map(x=>{
+   const when=x.ts?new Date(x.ts).toLocaleString("de-DE"):"wird gespeichert …";
+   const qty=x.action==="geändert"?`${x.oldQty} → ${x.newQty}`:x.action==="gelöscht"?`${x.oldQty} → 0`:`0 → ${x.newQty}`;
+   return `<div class="recent"><div><b>${esc(x.userName)}</b> · ${esc(x.itemName)}<div class="small">${esc(when)} · ${esc(x.source)} · ${esc(x.action)}</div></div><b>${esc(qty)}</b></div>`;
+ }).join(""):'<div class="small" style="padding:12px 0">Noch keine Änderungen protokolliert.</div>';
+}
+
+function renderTabs(){
+ $("#tabs").innerHTML=CATS.map(c=>`<button class="tab ${c===active?"on":""}" data-cat="${esc(c)}">${esc(c)}</button>`).join("");
+}
+function filteredProducts(){
+ const terms=normalizeSearch($("#search").value).split(/\s+/).filter(Boolean);
+ return PRODUCTS.filter(p=>{
+   const hay=normalizeSearch([p.name,p.size,p.cat].join(" "));
+   if(terms.length)return terms.every(t=>hay.includes(t));
+   return active==="Favoriten"?isFav(p.id):p.cat===active;
+ });
+}
+function renderProducts(){
+ if(session?.role!=="user")return;
+ const list=filteredProducts();
+ $("#products").innerHTML=list.length?list.map(p=>`<div class="product">
+  <div><div class="pname">${esc(p.name)} <button class="favbtn ${isFav(p.id)?"on":""}" data-fav="${p.id}">${isFav(p.id)?"★":"☆"}</button></div>
+  <div class="meta">${esc(p.size)}${p.size?" · ":""}${euro(p.price)}</div></div>
+  <div class="counter"><button class="minus" data-id="${p.id}" data-d="-1">−</button><div class="qty">${ownQty(p.id)}</div><button class="plus" data-id="${p.id}" data-d="1">+</button></div>
+ </div>`).join(""):`<div class="small" style="padding:12px 0">${active==="Favoriten"?"Noch keine Favoriten markiert. Tippe bei einem Artikel auf ☆.":"Keine Artikel gefunden."}</div>`;
+}
+function renderRecent(){
+ const q=PRODUCTS.filter(p=>ownQty(p.id)>0);
+ $("#recent").innerHTML=q.length?q.map(p=>`<div class="recent"><div><b>${esc(p.name)}</b><div class="small">${ownQty(p.id)} × ${euro(p.price)}</div></div><b>${euro(ownQty(p.id)*p.price)}</b></div>`).join(""):'<div class="small" style="padding:12px 0">Noch nichts gebucht.</div>';
+ $("#myCount").textContent=`${orderCount(ownOrders)} Positionen`;
+ $("#bottomTotal").textContent=euro(ownTotal());
+}
+function renderUser(){
+ if(session?.role!=="user")return;
+ $("#who").textContent=ownProfile?.name||session.name||"Teilnehmer";
+ renderTabs();renderProducts();renderRecent();
+}
+function renderAdmin(){
+ if(session?.role!=="admin")return;
+ const people=Object.entries(adminUsers).map(([uid,p])=>({uid,...p}));
+ const total=people.reduce((s,p)=>s+orderTotal(adminOrders[p.uid]),0);
+ $("#grandTotal").textContent=euro(total);$("#bottomTotal").textContent=euro(total);
+ $("#invoiceTotal").value=adminInvoice?adminInvoice.toFixed(2).replace(".",","):"";
+ const delta=adminInvoice?adminInvoice-total:null;
+ $("#invoiceDelta").textContent=delta===null?"–":euro(delta);
+ $("#invoiceDelta").className=delta===null?"":Math.abs(delta)<0.01?"ok":Math.abs(delta)<=10?"warn":"err";
+ renderAdminLog();
+ $("#adminSummary").innerHTML=people.sort((a,b)=>orderTotal(adminOrders[b.uid])-orderTotal(adminOrders[a.uid])).map(p=>`<div class="adminrow">
+   <div><b>${esc(p.name||"Ohne Name")}</b><div class="small">${orderCount(adminOrders[p.uid])} Positionen</div></div>
+   <div class="row"><button class="btn2 edit" data-edituid="${esc(p.uid)}">${euro(orderTotal(adminOrders[p.uid]))}</button><button class="danger" data-deleteuid="${esc(p.uid)}">Löschen</button></div>
+ </div>`).join("")||'<div class="small" style="padding:12px 0">Noch keine Teilnehmer registriert.</div>';
+}
+
+function showUser(){
+ session={role:"user",uid:currentUid,name:ownProfile?.name||""};localStorage.setItem("w_session_v10_3",JSON.stringify(session));
+ $("#loginView").classList.add("hidden");$("#appView").classList.remove("hidden");
+ $("#userArea").classList.remove("hidden");$("#adminArea").classList.add("hidden");
+ $("#headerSub").textContent="Meine Strichliste · Weinzelt 2026";$("#bottomLabel").textContent="Meine Summe";
+ renderUser();
+}
+function showAdmin(){
+ session={role:"admin",uid:currentUid,email:auth.currentUser.email};localStorage.setItem("w_session_v10_3",JSON.stringify(session));
+ $("#loginView").classList.add("hidden");$("#appView").classList.remove("hidden");
+ $("#userArea").classList.add("hidden");$("#adminArea").classList.remove("hidden");
+ $("#headerSub").textContent="Admin-Übersicht · Weinzelt 2026";$("#bottomLabel").textContent="Gesamtsumme";
+ $("#adminEmail").textContent=auth.currentUser.email||"Admin";
+ renderAdmin();
+}
+
+async function ensureAnonymous(){
+ if(auth.currentUser && auth.currentUser.isAnonymous){currentUid=auth.currentUser.uid;return}
+ if(auth.currentUser)await authApi.signOut(auth);
+ const cred=await authApi.signInAnonymously(auth);currentUid=cred.user.uid;
+}
+async function checkAdmin() {
+ const snap=await dApi.get(dApi.ref(db,"wiesn2026/admins/"+currentUid));
+ return snap.exists()&&snap.val()===true;
+}
+async function loadOwn(){
+ const [p,o,f]=await Promise.all([
+   dApi.get(dApi.ref(db,"wiesn2026/users/"+currentUid)),
+   dApi.get(dApi.ref(db,"wiesn2026/orders/"+currentUid)),
+   dApi.get(dApi.ref(db,"wiesn2026/favorites/"+currentUid))
+ ]);
+ ownProfile=p.val()||null;ownOrders=o.val()||{};ownFavorites=f.val()||[];
+}
+function attachOwnListeners(){
+ dApi.onValue(dApi.ref(db,"wiesn2026/users/"+currentUid),s=>{ownProfile=s.val()||null;if(session?.role==="user")renderUser()});
+ dApi.onValue(dApi.ref(db,"wiesn2026/orders/"+currentUid),s=>{ownOrders=s.val()||{};if(session?.role==="user")renderUser()});
+ dApi.onValue(dApi.ref(db,"wiesn2026/favorites/"+currentUid),s=>{ownFavorites=s.val()||[];if(session?.role==="user")renderUser()});
+}
+function attachAdminListeners(){
+ dApi.onValue(dApi.ref(db,"wiesn2026/users"),s=>{adminUsers=s.val()||{};renderAdmin()});
+ dApi.onValue(dApi.ref(db,"wiesn2026/orders"),s=>{adminOrders=s.val()||{};renderAdmin()});
+ dApi.onValue(dApi.ref(db,"wiesn2026/invoice"),s=>{adminInvoice=Number(s.val()||0);renderAdmin()});
+ dApi.onValue(dApi.ref(db,"wiesn2026/logs"),s=>{adminLogs=s.val()||{};renderAdminLog()});
+}
+
+$("#loginBtn").onclick=async()=>{
+ $("#loginError").textContent="";
+ try{
+   if(auth.currentUser && !auth.currentUser.isAnonymous){
+      currentUid=auth.currentUser.uid;
+      if(session?.role==="admin" && await checkAdmin()){
+        attachAdminListeners();showAdmin();
+      }else{
+        await authApi.signOut(auth);await ensureAnonymous();await loadOwn();
+      }
+   }else{
+      await ensureAnonymous();await loadOwn();
+   }
+   const name=$("#loginName").value.trim(),pin=$("#loginPin").value.trim();
+   if(!name)throw new Error("Bitte deinen Namen eingeben.");
+   if(!/^\d{4}$/.test(pin))throw new Error("Bitte eine 4-stellige PIN eingeben.");
+   const pinHash=await sha256(pin);
+   if(ownProfile){
+     if(ownProfile.pinHash!==pinHash)throw new Error("PIN ist für dieses Gerät nicht korrekt.");
+   }else{
+     await dApi.set(dApi.ref(db,"wiesn2026/users/"+currentUid),{name,pinHash});
+     ownProfile={name,pinHash};
+   }
+   attachOwnListeners();showUser();
+ }catch(e){$("#loginError").textContent=e.message||"Anmeldung fehlgeschlagen."}
+};
+
+$("#adminLoginLink").onclick=()=>{$("#adminLoginError").textContent="";$("#adminLogin").showModal()};
+$("#closeAdminLogin").onclick=()=>$("#adminLogin").close();
+$("#adminLoginBtn").onclick=async()=>{
+ $("#adminLoginError").textContent="";
+ const email=$("#adminEmailInput").value.trim(),pass=$("#adminPasswordInput").value;
+ if(!email||!pass){$("#adminLoginError").textContent="Bitte E-Mail und Passwort eingeben.";return}
+ try{
+   if(auth.currentUser)await authApi.signOut(auth);
+   const cred=await authApi.signInWithEmailAndPassword(auth,email,pass);
+   currentUid=cred.user.uid;
+   if(!(await checkAdmin())){
+     await authApi.signOut(auth);currentUid=null;
+     throw new Error("Dieses Firebase-Konto besitzt keine Admin-Berechtigung.");
+   }
+   attachAdminListeners();$("#adminLogin").close();showAdmin();
+ }catch(e){
+   console.error(e);
+   $("#adminLoginError").textContent="Admin-Anmeldung fehlgeschlagen. E-Mail, Passwort und Admin-Berechtigung prüfen.";
+ }
+};
+
+$("#logoutBtn").onclick=async()=>{
+ try{if(auth.currentUser)await authApi.signOut(auth)}catch(e){}
+ session=null;localStorage.removeItem("w_session_v10_3");currentUid=null;ownProfile=null;ownOrders={};ownFavorites=[];adminUsers={};adminOrders={};
+ $("#appView").classList.add("hidden");$("#loginView").classList.remove("hidden");
+ $("#loginPin").value="";$("#adminPasswordInput").value="";
+ await ensureAnonymous();await loadOwn();
+};
+
+$("#search").oninput=renderProducts;
+document.addEventListener("click",async e=>{
+ const b=e.target.closest("button");if(!b)return;
+ if(b.dataset.cat){active=b.dataset.cat;renderTabs();renderProducts();return}
+ if(b.dataset.fav){
+   const s=new Set(ownFavorites);s.has(b.dataset.fav)?s.delete(b.dataset.fav):s.add(b.dataset.fav);
+   ownFavorites=[...s];await dApi.set(dApi.ref(db,"wiesn2026/favorites/"+currentUid),ownFavorites);renderProducts();return;
+ }
+ if(b.dataset.id){
+   const id=b.dataset.id,d=Number(b.dataset.d),isAdmin=session?.role==="admin",uid=isAdmin?b.dataset.uid:currentUid;
+   const source=isAdmin?(adminOrders[uid]||{}):ownOrders;
+   const oldQty=Number(source[id]||0);
+   const next={...source};next[id]=Math.max(0,oldQty+d);const newQty=Number(next[id]||0);if(!next[id])delete next[id];
+   await dApi.set(dApi.ref(db,"wiesn2026/orders/"+uid),next);
+   const targetName=isAdmin?(adminUsers[uid]?.name||uid):(ownProfile?.name||session?.name||"Teilnehmer");
+   await addLog({uid,userName:targetName,itemId:id,oldQty,newQty,source:isAdmin?"Admin":"Teilnehmer"});
+   if(!isAdmin)ownOrders=next;
+   return;
+ }
+ if(b.dataset.edituid){renderEdit(b.dataset.edituid);$("#editPerson").showModal();return}
+ if(b.dataset.deleteuid){await deleteParticipant(b.dataset.deleteuid);return}
+});
+$("#closeEdit").onclick=()=>$("#editPerson").close();
+
+function renderEdit(uid){
+ const p=adminUsers[uid]||{name:uid},order=adminOrders[uid]||{};
+ $("#editTitle").textContent=(p.name||"Teilnehmer")+" bearbeiten";
+ const used=PRODUCTS.filter(x=>Number(order[x.id]||0)>0);
+ const list=used.length?used:PRODUCTS.slice(0,10);
+ $("#editProducts").innerHTML=list.map(x=>`<div class="product"><div><div class="pname">${esc(x.name)}</div><div class="meta">${euro(x.price)}</div></div>
+ <div class="counter"><button class="minus" data-id="${x.id}" data-uid="${uid}" data-d="-1">−</button><div class="qty">${Number(order[x.id]||0)}</div><button class="plus" data-id="${x.id}" data-uid="${uid}" data-d="1">+</button></div></div>`).join("");
+}
+$("#clearLog").onclick=async()=>{
+ if(session?.role!=="admin")return;
+ if(confirm("Änderungsprotokoll wirklich vollständig löschen?"))await dApi.remove(dApi.ref(db,"wiesn2026/logs"));
+};
+async function deleteParticipant(uid){
+ if(session?.role!=="admin"||!uid)return;
+ const p=adminUsers[uid];
+ if(!confirm(`Teilnehmer "${p?.name||uid}" wirklich vollständig löschen?`))return;
+ await Promise.all([
+   dApi.remove(dApi.ref(db,"wiesn2026/users/"+uid)),
+   dApi.remove(dApi.ref(db,"wiesn2026/orders/"+uid)),
+   dApi.remove(dApi.ref(db,"wiesn2026/favorites/"+uid))
+ ]);
+ // Logs remain for audit, but mark deletion event
+ const logRef=dApi.push(dApi.ref(db,"wiesn2026/logs"));
+ await dApi.set(logRef,{
+   ts:dApi.serverTimestamp(),
+   uid:auth.currentUser.uid,
+   targetUid:uid,
+   userName:p?.name||uid,
+   itemId:"__account__",
+   itemName:"Teilnehmerkonto",
+   oldQty:1,newQty:0,delta:-1,
+   action:"gelöscht",
+   source:"Admin"
+ });
+}
+$("#saveInvoice").onclick=async()=>{
+ const v=Number($("#invoiceTotal").value.replace(",","."));
+ if(!Number.isFinite(v)||v<0)return;
+ await dApi.set(dApi.ref(db,"wiesn2026/invoice"),v);
+};
+
+async function initFirebase(){
+ try{
+   const appMod=await import("https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js");
+   authApi=await import("https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js");
+   dApi=await import("https://www.gstatic.com/firebasejs/10.13.1/firebase-database.js");
+   appCheckApi=await import("https://www.gstatic.com/firebasejs/10.13.1/firebase-app-check.js");
+   const app=appMod.initializeApp(firebaseConfig);
+
+   appCheck=appCheckApi.initializeAppCheck(app,{
+     provider:new appCheckApi.ReCaptchaEnterpriseProvider("6LfIapotAAAAALo4GHVKGXV7-gu3cw2J5Qyr_67o"),
+     isTokenAutoRefreshEnabled:true
+   });
+
+   auth=authApi.getAuth(app);db=dApi.getDatabase(app);
+   await ensureAnonymous();await loadOwn();
+   $("#loginSync").textContent="● Firebase + App Check verbunden";$("#loginSync").classList.add("ok");
+
+   // Session nach Refresh wiederherstellen
+   if(session?.role==="user"){
+     if(session.uid===currentUid && ownProfile){
+       attachOwnListeners();showUser();
+     }else{
+       session=null;localStorage.removeItem("w_session_v10_3");
+     }
+   }
+ }catch(e){
+   console.error(e);$("#loginSync").textContent="● Firebase-Verbindung fehlgeschlagen";$("#loginSync").classList.add("err");
+ }
+}
+renderTabs();initFirebase();
+</script>
+</body>
+</html>
