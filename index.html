@@ -11,6 +11,13 @@
 .hidden{display:none!important}header{position:sticky;top:0;z-index:20;background:var(--g);color:#fff;padding:13px 15px;box-shadow:0 2px 10px #0002}
 header h1{font-size:19px;margin:0}header .sub{font-size:12px;opacity:.9;margin-top:3px}
 .nebuHeader{margin-top:10px;padding-top:9px;border-top:1px solid #ffffff35;color:#ffb3b3;font-size:13px;line-height:1.4;font-weight:700}
+.nebuHeadRow{display:flex;align-items:center;gap:6px}
+.nebuToggle{border:0;background:transparent;color:#ffb3b3;padding:0 2px;font-size:20px;line-height:1;transform:rotate(0deg);transition:transform .18s ease}
+.nebuHeader.collapsed .nebuToggle{transform:rotate(-90deg)}
+.nebuShort{font-size:12px;font-weight:850}
+.nebuContent{margin-top:4px;max-height:180px;opacity:1;overflow:hidden;transition:max-height .22s ease,opacity .18s ease,margin .22s ease}
+.nebuHeader.collapsed .nebuContent{max-height:0;opacity:0;margin-top:0}
+
 .nebuHeader #nebukadnezarBill{display:inline-block;margin-left:6px;color:#ffb3b3;font-size:17px;font-weight:950}
 
 main{max-width:780px;margin:auto;padding:12px 12px 100px}.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 12px #0000000d}
@@ -56,7 +63,7 @@ dialog{border:0;border-radius:18px;width:min(94vw,650px);max-height:88vh;padding
       <input id="loginName" type="text" required autocomplete="name" placeholder="Vor- und Nachname eingeben">
       <label for="loginPin">4-stellige PIN *</label>
       <input id="loginPin" type="password" required inputmode="numeric" maxlength="4" minlength="4" pattern="[0-9]{4}" placeholder="4-stellige PIN">
-      <div class="small" style="margin-top:8px">Beim ersten Login wird dieses Gerät mit Name und PIN registriert.</div>
+      <div class="small" style="margin-top:8px">Name + PIN bilden deinen Account. Mit denselben Daten kannst du ihn auf jedem Gerät verwenden.</div>
       <button id="loginBtn" class="btn full" style="margin-top:14px">Anmelden</button>
       <div id="loginError" class="loginerror"></div>
       <button id="adminLoginLink" class="btn2 full" style="margin-top:7px">Admin-Login</button>
@@ -72,8 +79,14 @@ dialog{border:0;border-radius:18px;width:min(94vw,650px);max-height:88vh;padding
     <button id="logoutBtn" class="btn2">Abmelden</button>
   </div>
   <div id="nebukadnezarHeader" class="nebuHeader">
-    Wenn du eine <b>„Veuve Clicquot Yellow Label Brut – Nebukadnezar“</b> bestellst – egal ob gewollt oder ungewollt, wegen geistiger Umnachtung oder weil du rotzevoll bist –, musst <b>DU</b> sie bezahlen. Deine aktuelle Rechnung wäre dann:
-    <span id="nebukadnezarBill">0,00 €</span>
+    <div class="nebuHeadRow">
+      <button id="nebuToggle" class="nebuToggle" type="button" aria-expanded="true" title="Hinweis ein-/ausklappen">⌄</button>
+      <span class="nebuShort">Nebukadnezar-Hinweis</span>
+    </div>
+    <div id="nebuContent" class="nebuContent">
+      Wenn du eine <b>„Veuve Clicquot Yellow Label Brut – Nebukadnezar“</b> bestellst – egal ob gewollt oder ungewollt, wegen geistiger Umnachtung oder weil du rotzevoll bist –, musst <b>DU</b> sie bezahlen. Deine aktuelle Rechnung wäre dann:
+      <span id="nebukadnezarBill">0,00 €</span>
+    </div>
   </div>
 </header>
 <main>
@@ -288,7 +301,7 @@ const PRODUCTS=[
 const CATS=["Favoriten", "Brotzeit & Vorspeisen", "Suppen", "Fisch", "Hauptgerichte", "Vegetarisch & Vegan", "Würstl & Grill", "Spätkarte", "Asia", "Dessert & Kaffee", "Schoppenwein", "Flaschenwein Rosé", "Flaschenwein Weiß", "Flaschenwein Rot", "Champagner & Sekt", "Bier & Alkoholfrei", "Spirituosen", "Extras"];
 
 let auth=null, authApi=null, db=null, dApi=null, appCheckApi=null, appCheck=null, currentUid=null;
-let session=JSON.parse(localStorage.getItem("w_session_v10_3")||"null"), active="Favoriten";
+let session=JSON.parse(localStorage.getItem("w_session_v10_3")||"null"), active="Favoriten", nebuTimer=null;
 let ownProfile=null, ownOrders={}, ownFavorites=[];
 let adminUsers={}, adminOrders={}, adminInvoice=0, adminLogs={};
 
@@ -296,6 +309,18 @@ const $=s=>document.querySelector(s);
 const euro=n=>new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR"}).format(Number(n||0));
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
 const sha256=async s=>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")};
+function normalizeIdentityName(name){
+  return String(name||"").normalize("NFKC").trim().replace(/\s+/g," ").toLocaleLowerCase("de-DE");
+}
+async function participantCredentials(name,pin){
+  const normalized=normalizeIdentityName(name);
+  const nameHash=await sha256(normalized);
+  // Synthetische, deterministische Firebase-E-Mail. Für den Nutzer unsichtbar.
+  const email=`u-${nameHash}@wiesn2026.example.com`;
+  // Firebase verlangt mindestens 6 Zeichen; die sichtbare PIN bleibt 4-stellig.
+  const password=`Wiesn2026!${pin}!${nameHash.slice(0,12)}`;
+  return {email,password,normalized,nameHash};
+}
 
 function normalizeSearch(s){
  return String(s||"").toLocaleLowerCase("de-DE")
@@ -309,6 +334,18 @@ function ownTotal(){return PRODUCTS.reduce((s,p)=>s+ownQty(p.id)*p.price,0)}
 const START_CREDIT=200, NEBUKADNEZAR_PRICE=5500;
 function orderTotal(order){return PRODUCTS.reduce((s,p)=>s+Number(order?.[p.id]||0)*p.price,0)}
 function orderCount(order){return Object.values(order||{}).reduce((s,n)=>s+Number(n||0),0)}
+function setNebuCollapsed(collapsed){
+ const box=$("#nebukadnezarHeader"),btn=$("#nebuToggle");
+ if(!box||!btn)return;
+ box.classList.toggle("collapsed",collapsed);
+ btn.setAttribute("aria-expanded",String(!collapsed));
+}
+function scheduleNebuCollapse(){
+ if(nebuTimer)clearTimeout(nebuTimer);
+ setNebuCollapsed(false);
+ nebuTimer=setTimeout(()=>setNebuCollapsed(true),10000);
+}
+
 function productById(id){return PRODUCTS.find(p=>p.id===id)}
 async function addLog({uid,userName,itemId,oldQty,newQty,source}){
  const p=productById(itemId); if(!p||oldQty===newQty||!dApi||!db||!auth?.currentUser)return;
@@ -398,6 +435,7 @@ function showUser(){
  $("#headerSub").textContent="Meine Strichliste · Weinzelt 2026";$("#bottomLabel").textContent="Meine Summe";
  document.querySelectorAll(".footerstat").forEach(x=>x.classList.remove("hidden"));
  $("#nebukadnezarHeader").classList.remove("hidden");
+ scheduleNebuCollapse();
  renderUser();
 }
 function showAdmin(){
@@ -406,16 +444,13 @@ function showAdmin(){
  $("#userArea").classList.add("hidden");$("#adminArea").classList.remove("hidden");
  $("#headerSub").textContent="Admin-Übersicht · Weinzelt 2026";$("#bottomLabel").textContent="Gesamtsumme";
  document.querySelectorAll(".footerstat").forEach((x,i)=>x.classList.toggle("hidden",i>0));
+ if(nebuTimer){clearTimeout(nebuTimer);nebuTimer=null}
  $("#nebukadnezarHeader").classList.add("hidden");
  $("#adminEmail").textContent=auth.currentUser.email||"Admin";
  renderAdmin();
 }
 
-async function ensureAnonymous(){
- if(auth.currentUser && auth.currentUser.isAnonymous){currentUid=auth.currentUser.uid;return}
- if(auth.currentUser)await authApi.signOut(auth);
- const cred=await authApi.signInAnonymously(auth);currentUid=cred.user.uid;
-}
+
 async function checkAdmin() {
  const snap=await dApi.get(dApi.ref(db,"wiesn2026/admins/"+currentUid));
  return snap.exists()&&snap.val()===true;
@@ -443,28 +478,58 @@ function attachAdminListeners(){
 $("#loginBtn").onclick=async()=>{
  $("#loginError").textContent="";
  try{
-   if(auth.currentUser && !auth.currentUser.isAnonymous){
-      currentUid=auth.currentUser.uid;
-      if(session?.role==="admin" && await checkAdmin()){
-        attachAdminListeners();showAdmin();
-      }else{
-        await authApi.signOut(auth);await ensureAnonymous();await loadOwn();
-      }
-   }else{
-      await ensureAnonymous();await loadOwn();
-   }
    const name=$("#loginName").value.trim(),pin=$("#loginPin").value.trim();
    if(!name)throw new Error("Bitte deinen Namen eingeben.");
    if(!/^\d{4}$/.test(pin))throw new Error("Bitte eine 4-stellige PIN eingeben.");
+
+   const creds=await participantCredentials(name,pin);
+
+   // Vorhandene Admin-/andere Session sauber beenden.
+   if(auth.currentUser)await authApi.signOut(auth);
+
+   let cred;
+   try{
+     // Existiert Name+PIN bereits, führt dies auf jedem Gerät zur gleichen Firebase UID.
+     cred=await authApi.signInWithEmailAndPassword(auth,creds.email,creds.password);
+   }catch(signInError){
+     // Bei einem neuen Namen existiert der technische Account noch nicht.
+     const code=String(signInError?.code||"");
+     if(code==="auth/invalid-credential" || code==="auth/user-not-found" || code==="auth/wrong-password"){
+       try{
+         cred=await authApi.createUserWithEmailAndPassword(auth,creds.email,creds.password);
+       }catch(createError){
+         // Account existiert, aber PIN war falsch.
+         if(String(createError?.code||"")==="auth/email-already-in-use"){
+           throw new Error("Name oder PIN ist nicht korrekt.");
+         }
+         throw createError;
+       }
+     }else{
+       throw signInError;
+     }
+   }
+
+   currentUid=cred.user.uid;
+   await loadOwn();
+
    const pinHash=await sha256(pin);
    if(ownProfile){
-     if(ownProfile.pinHash!==pinHash)throw new Error("PIN ist für dieses Gerät nicht korrekt.");
+     // Zusätzliche App-Prüfung der PIN.
+     if(ownProfile.pinHash!==pinHash)throw new Error("Name oder PIN ist nicht korrekt.");
    }else{
-     await dApi.set(dApi.ref(db,"wiesn2026/users/"+currentUid),{name,pinHash});
-     ownProfile={name,pinHash};
+     await dApi.set(dApi.ref(db,"wiesn2026/users/"+currentUid),{
+       name,
+       pinHash,
+       identityName:creds.normalized
+     });
+     ownProfile={name,pinHash,identityName:creds.normalized};
    }
+
    attachOwnListeners();showUser();
- }catch(e){$("#loginError").textContent=e.message||"Anmeldung fehlgeschlagen."}
+ }catch(e){
+   console.error(e);
+   $("#loginError").textContent=e.message||"Anmeldung fehlgeschlagen.";
+ }
 };
 
 $("#adminLoginLink").onclick=()=>{$("#adminLoginError").textContent="";$("#adminLogin").showModal()};
@@ -493,9 +558,13 @@ $("#logoutBtn").onclick=async()=>{
  session=null;localStorage.removeItem("w_session_v10_3");currentUid=null;ownProfile=null;ownOrders={};ownFavorites=[];adminUsers={};adminOrders={};
  $("#appView").classList.add("hidden");$("#loginView").classList.remove("hidden");
  $("#loginPin").value="";$("#adminPasswordInput").value="";
- await ensureAnonymous();await loadOwn();
 };
 
+$("#nebuToggle").onclick=()=>{
+ const collapsed=$("#nebukadnezarHeader").classList.contains("collapsed");
+ setNebuCollapsed(!collapsed);
+ if(nebuTimer){clearTimeout(nebuTimer);nebuTimer=null}
+};
 $("#search").oninput=renderProducts;
 document.addEventListener("click",async e=>{
  const b=e.target.closest("button");if(!b)return;
@@ -576,6 +645,11 @@ $("#saveInvoice").onclick=async()=>{
  await dApi.set(dApi.ref(db,"wiesn2026/invoice"),v);
 };
 
+function waitForInitialAuthState(){
+ return new Promise(resolve=>{
+   const unsub=authApi.onAuthStateChanged(auth,user=>{unsub();resolve(user)});
+ });
+}
 async function initFirebase(){
  try{
    const appMod=await import("https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js");
@@ -589,20 +663,44 @@ async function initFirebase(){
      isTokenAutoRefreshEnabled:true
    });
 
-   auth=authApi.getAuth(app);db=dApi.getDatabase(app);
-   await ensureAnonymous();await loadOwn();
-   $("#loginSync").textContent="● Firebase + App Check verbunden";$("#loginSync").classList.add("ok");
+   auth=authApi.getAuth(app);
+   await authApi.setPersistence(auth,authApi.browserLocalPersistence);
+   db=dApi.getDatabase(app);
 
-   // Session nach Refresh wiederherstellen
-   if(session?.role==="user"){
-     if(session.uid===currentUid && ownProfile){
-       attachOwnListeners();showUser();
+   // Entscheidend für Refresh: erst warten, bis Firebase die gespeicherte Session
+   // aus IndexedDB/localStorage wiederhergestellt hat.
+   const restoredUser=await waitForInitialAuthState();
+
+   if(restoredUser){
+     currentUid=restoredUser.uid;
+
+     if(await checkAdmin()){
+       attachAdminListeners();
+       showAdmin();
      }else{
-       session=null;localStorage.removeItem("w_session_v10_3");
+       await loadOwn();
+       if(ownProfile){
+         attachOwnListeners();
+         showUser();
+       }else{
+         await authApi.signOut(auth);
+         currentUid=null;
+         session=null;
+         localStorage.removeItem("w_session_v10_3");
+       }
      }
+   }else{
+     currentUid=null;
+     session=null;
+     localStorage.removeItem("w_session_v10_3");
    }
+
+   $("#loginSync").textContent="● Firebase + App Check verbunden";
+   $("#loginSync").classList.add("ok");
  }catch(e){
-   console.error(e);$("#loginSync").textContent="● Firebase-Verbindung fehlgeschlagen";$("#loginSync").classList.add("err");
+   console.error(e);
+   $("#loginSync").textContent="● Firebase-Verbindung fehlgeschlagen";
+   $("#loginSync").classList.add("err");
  }
 }
 renderTabs();initFirebase();
