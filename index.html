@@ -588,9 +588,12 @@ document.addEventListener("click",async e=>{
    const source=isAdmin?(adminOrders[uid]||{}):ownOrders;
    const oldQty=Number(source[id]||0);
    const prospectiveQty=Math.max(0,oldQty+d);
-   if(d<0 && oldQty>0 && prospectiveQty===0){
+   if(d<0 && oldQty>0){
      const p=productById(id);
-     if(!confirm(`„${p?.name||"Artikel"}“ wirklich löschen?`))return;
+     const question=prospectiveQty===0
+       ? `„${p?.name||"Artikel"}“ wirklich vollständig löschen?`
+       : `„${p?.name||"Artikel"}“ wirklich von ${oldQty} auf ${prospectiveQty} reduzieren?`;
+     if(!confirm(question))return;
    }
    const next={...source};next[id]=prospectiveQty;const newQty=Number(next[id]||0);if(!next[id])delete next[id];
    await dApi.set(dApi.ref(db,"wiesn2026/orders/"+uid),next);
