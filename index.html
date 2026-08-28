@@ -126,7 +126,7 @@ dialog{border:0;border-radius:18px;width:min(94vw,650px);max-height:88vh;padding
     </div>
     <div class="footerstat">
       <div class="small">Mein Guthaben</div>
-      <div class="total" id="footerCredit">200,00 €</div>
+      <div class="total" id="footerCredit">90,60 €</div>
     </div>
     <div class="footerstat right">
       <div class="small">Du schuldest Robert</div>
@@ -331,7 +331,7 @@ function normalizeSearch(s){
 function isFav(id){return ownFavorites.includes(id)}
 function ownQty(id){return Number(ownOrders[id]||0)}
 function ownTotal(){return PRODUCTS.reduce((s,p)=>s+ownQty(p.id)*p.price,0)}
-const START_CREDIT=200, NEBUKADNEZAR_PRICE=5500;
+const START_CREDIT=90.60, NEBUKADNEZAR_PRICE=5500;
 function orderTotal(order){return PRODUCTS.reduce((s,p)=>s+Number(order?.[p.id]||0)*p.price,0)}
 function orderCount(order){return Object.values(order||{}).reduce((s,n)=>s+Number(n||0),0)}
 function setNebuCollapsed(collapsed){
